@@ -18,6 +18,14 @@ def check_teacher_exists(username):
     return len(response.data) > 0 
 
 
+def check_student_exists_by_roll(roll_number):
+    # Returns true if a student with this roll number already exists
+    if not roll_number:
+        return False
+    response = supabase.table("students").select("roll_number").eq("roll_number", str(roll_number).strip()).execute()
+    return len(response.data) > 0
+
+
 
 def create_teacher(username, password, name):
     username = username.strip()
@@ -40,8 +48,13 @@ def get_all_students():
     response = supabase.table('students').select("*").execute()
     return response.data
 
-def create_student(new_name, face_embedding=None, voice_embedding=None):
-    data = {'name': new_name, 'face_embedding':face_embedding, "voice_embedding": voice_embedding}
+def create_student(new_name, roll_number, face_embedding=None, voice_embedding=None):
+    data = {
+        'name': new_name, 
+        'roll_number': str(roll_number).strip(),
+        'face_embedding':face_embedding, 
+        "voice_embedding": voice_embedding
+    }
     response = supabase.table('students').insert(data).execute()
     return response.data
 
