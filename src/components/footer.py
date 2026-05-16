@@ -3,7 +3,7 @@ import streamlit as st
 
 
 def footer_home():
-    logo_url = "https://i.ibb.co/xqnrCR4q/Chat-GPT-Image-May-15-2026-03-43-07-AM.png"
+    logo_url = "https://i.ibb.co/nsMF7Vzb/TEAM-AI-AVENGERS.png"
     
     st.markdown(f"""
         <div style="margin-top:2rem; display:flex; gap:6px; justify-content:center; items-align:center">
@@ -15,7 +15,7 @@ def footer_home():
 
 
 def footer_dashboard():
-    logo_url = "https://i.ibb.co/xqnrCR4q/Chat-GPT-Image-May-15-2026-03-43-07-AM.png"
+    logo_url = "https://i.ibb.co/nsMF7Vzb/TEAM-AI-AVENGERS.png"
     
     st.markdown(f"""
         <div style="margin-top:2rem; display:flex; gap:6px; justify-content:center; items-align:center">
