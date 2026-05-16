@@ -1,0 +1,3 @@
+cmake
+g++
+libgl1-mesa-glx
