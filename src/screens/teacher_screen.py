@@ -47,9 +47,11 @@ def teacher_dashboard():
         header_dashboard()
     with c2:
         st.subheader(f"""Welcome, {teacher_data['name']} """)
-        if st.button("Logout", type='secondary', key='loginbackbtn', shortcut="control+backspace"):
+        if st.button("Logout", type='secondary', key='teacher_logout_btn', shortcut="control+backspace"):
             st.session_state['is_logged_in'] = False
-            del st.session_state.teacher_data 
+            st.session_state['login_type'] = None
+            if 'teacher_data' in st.session_state:
+                del st.session_state.teacher_data 
             st.rerun()
 
 
@@ -305,7 +307,7 @@ def teacher_screen_login():
     with c1:
         header_dashboard()
     with c2:
-        if st.button("Go back to Home", type='secondary', key='loginbackbtn', shortcut="control+backspace"):
+        if st.button("Go back to Home", type='secondary', key='teacher_login_back_btn', shortcut="control+backspace"):
             st.session_state['login_type'] = None
             st.rerun()
 
@@ -324,7 +326,7 @@ def teacher_screen_login():
 
     with btnc1:
         if st.button('Login', icon=':material/passkey:', shortcut='control+enter', width='stretch'):
-            if login_teacher(teacher_username, teacher_pass):
+            if login_teacher(teacher_username.strip(), teacher_pass):
                 st.toast("welcome back!", icon="👋")
                 import time
                 time.sleep(1)
@@ -360,7 +362,7 @@ def teacher_screen_register():
     with c1:
         header_dashboard()
     with c2:
-        if st.button("Go back to Home", type='secondary', key='loginbackbtn', shortcut="control+backspace"):
+        if st.button("Go back to Home", type='secondary', key='teacher_reg_back_btn', shortcut="control+backspace"):
             st.session_state['login_type'] = None
             st.rerun()
 
@@ -386,7 +388,7 @@ def teacher_screen_register():
 
     with btnc1:
         if st.button('Register now', icon=':material/passkey:', shortcut='control+enter', width='stretch'):
-            success, message = register_teacher(teacher_username, teacher_name, teacher_pass, teacher_pass_confirm)
+            success, message = register_teacher(teacher_username.strip(), teacher_name.strip(), teacher_pass, teacher_pass_confirm)
             if success:
                 st.success(message)
                 import time
