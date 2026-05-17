@@ -71,6 +71,8 @@ def student_dashboard():
 
 
         stats = stats_map.get(sid,{"total":0, "attended": 0} )
+        percentage = (stats['attended'] / stats['total'] * 100) if stats['total'] > 0 else 0
+
         def unenroll_button():
                 if st.button("Unenroll from tihs course", type='tertiary', width='stretch', icon=':material/delete_forever:', key=f"unenroll_{sid}"):
                     unenroll_student_to_subject(student_id, sid)
@@ -79,16 +81,25 @@ def student_dashboard():
 
         with cols[i % 2]:
 
+            card_stats = [
+                ('📅', 'Total', stats['total']),
+                ('✅', 'Attended', stats['attended']),
+                ('📊', 'Attendance', f"{percentage:.1f}%"),
+            ]
+
+            if percentage < 75.0 and stats['total'] > 0:
+                card_stats.append(('⚠️', 'Status', 'Low Attendance!'))
+
             subject_card(
                 name = sub['name'],
                 code =sub['subject_code'],
                 section = sub['section'],
-                stats = [
-                    ('📅', 'Total', stats['total']),
-                    ('✅', 'Attended', stats['attended']),
-                ],
+                stats = card_stats,
                 footer_callback=unenroll_button
             )
+            
+            if percentage < 75.0 and stats['total'] > 0:
+                st.warning(f"You need to increase attendance in {sub['name']} (Current: {percentage:.1f}%)")
     footer_dashboard()
 
 
