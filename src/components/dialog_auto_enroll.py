@@ -4,7 +4,7 @@ from src.database.db import enroll_student_to_subject
 from src.database.config import supabase
 import time
 
-@st.dialog("Enroll in Subject")
+@st.dialog("Enroll in Subject", key="auto_enroll_dialog")
 def auto_enroll_dialog(join_code):
     # Fetch subject details using the join_code
     res = supabase.table('subjects').select('subject_id, name, subject_code').eq('subject_code', join_code).execute()
