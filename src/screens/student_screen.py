@@ -176,7 +176,11 @@ def student_screen():
                                 if audio_data:
                                     voice_emb = get_voice_embedding(audio_data.read())
 
-                                response_data = create_student(new_name, new_roll, face_embedding=face_emb, voice_embedding=voice_emb)
+                                try:
+                                    response_data = create_student(new_name, new_roll, face_embedding=face_emb, voice_embedding=voice_emb)
+                                except Exception as e:
+                                    st.error(f"Failed to create profile: {e}")
+                                    response_data = None
 
                                 if response_data:
                                     train_classifier()
