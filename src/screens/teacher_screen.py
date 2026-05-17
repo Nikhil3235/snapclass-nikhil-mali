@@ -177,6 +177,7 @@ def teacher_tab_take_attendance():
                         results.append({
                             "Name": student['name'],
                             "Roll Number": student['roll_number'],
+                            "Subject": selected_subject_label.split(" - ")[0],
                             "Source": ", ".join(sources) if is_present else "-",
                             "Status": "✅ Present" if is_present else "❌ Absent"
                         })
