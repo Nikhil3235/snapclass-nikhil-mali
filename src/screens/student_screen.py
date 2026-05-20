@@ -122,64 +122,95 @@ def student_screen():
             st.session_state['login_type'] = None
             st.rerun()
 
-    st.header('Login using FaceID', text_alignment='center')
-    st.space()
+    st.header('Student Portal', text_alignment='center')
     st.space()
     
-    show_registration = False
-    photo_source = st.camera_input("Position your face in the center")
+    tab_login, tab_register = st.tabs(["🔑 FaceID Login", "📝 New Student Registration"])
 
-    if photo_source:
-        img = np.array(Image.open(photo_source))
+    with tab_login:
+        st.subheader("Login using FaceID")
+        photo_source = st.camera_input("Position your face in the center", key="login_camera")
 
-        with st.spinner('AI is scanning..'):
-            detected, all_ids, num_faces = predict_attendance(img)
+        if photo_source:
+            img = np.array(Image.open(photo_source))
 
-            if num_faces == 0:
-                st.warning('Face not found!')
-            elif num_faces >1:
-                st.warning('Multiple faces found')
-            else:
-                if detected:
-                    student_id = list(detected.keys())[0]
-                    all_students = get_all_students()
-                    student = next((s for s in all_students if s['student_id']==student_id), None)
+            with st.spinner('AI is scanning..'):
+                detected, all_ids, num_faces = predict_attendance(img)
 
-                    if student:
-                        st.session_state.is_logged_in = True
-                        st.session_state.user_role = 'student'
-                        st.session_state.student_data = student
-                        st.toast(f'Welcome Back {student['name']}')
-                        time.sleep(1)
-                        st.rerun()
+                if num_faces == 0:
+                    st.warning('Face not found! Please adjust lighting or position.')
+                elif num_faces > 1:
+                    st.warning('Multiple faces found. Please ensure only one person is in front of the camera.')
                 else:
-                    st.info('Face not recognized! You might be a new student!')
-                    show_registration = True
-    if show_registration:
+                    if detected:
+                        student_id = list(detected.keys())[0]
+                        all_students = get_all_students()
+                        student = next((s for s in all_students if s['student_id'] == student_id), None)
+
+                        if student:
+                            st.success(f"Recognized Face: **{student['name']}** (Roll: {student.get('roll_number', 'N/A')})")
+                            st.info("Is this you? Please confirm to login:")
+                            
+                            col_yes, col_no = st.columns(2)
+                            with col_yes:
+                                if st.button("Yes, Log Me In", type="primary", key="confirm_login_btn", width="stretch"):
+                                    st.session_state.is_logged_in = True
+                                    st.session_state.user_role = 'student'
+                                    st.session_state.student_data = student
+                                    st.toast(f"Welcome Back {student['name']}!")
+                                    time.sleep(1)
+                                    st.rerun()
+                            with col_no:
+                                if st.button("No, this is not me", type="secondary", key="reject_login_btn", width="stretch"):
+                                    st.warning("If you are a new student, please switch to the 'New Student Registration' tab to register.")
+                        else:
+                            st.info("Face recognized, but student profile not found in database.")
+                    else:
+                        st.info("Face not recognized! If you are a new student, please register under the 'New Student Registration' tab.")
+
+    with tab_register:
+        st.subheader("Register New Profile")
         with st.container(border=True):
-            st.header('Register new Profile')
-            new_name = st.text_input("Enter your name", placeholder='E.g. Hamza Rizvi')
-            new_roll = st.text_input("Enter your Roll Number", placeholder='E.g. 21BCS101')
+            new_name = st.text_input("Enter your name", placeholder='E.g. Hamza Rizvi', key="reg_name")
+            new_roll = st.text_input("Enter your Roll Number", placeholder='E.g. 21BCS101', key="reg_roll")
+
+            st.write("Take a photo of your face for FaceID registration:")
+            reg_photo_source = st.camera_input("Capture registration photo", key="register_camera")
 
             st.subheader('Optional : Voice Enrollment')
-            st.info("Enroll your for voice only attendance")
-
+            st.info("Enroll your voice for voice-only attendance")
 
             audio_data = None
-
             try:
-                audio_data = st.audio_input('Record a short phrase like I am present, My name is Akash.')
+                audio_data = st.audio_input('Record a short phrase like "I am present, My name is Akash."', key="reg_audio")
             except Exception:
                 st.error('Audio Data failed!')
 
-            if st.button('Create Account', type='primary'):
+            bypass_check = st.checkbox("Bypass duplicate face detection (Use only if face matches someone else incorrectly)", key="bypass_dup_check")
+
+            if st.button('Create Account', type='primary', key="reg_create_btn", width="stretch"):
                 if new_name and new_roll:
-                    if check_student_exists_by_roll(new_roll):
+                    if not reg_photo_source:
+                        st.error("Please capture your face photo using the camera above to register.")
+                    elif check_student_exists_by_roll(new_roll):
                         st.error(f'Roll Number {new_roll} is already registered! Please use your correct roll number.')
                     else:
                         with st.spinner('Creating profile..'):
-                            img = np.array(Image.open(photo_source))
-                            encodings= get_face_embeddings(img)
+                            img = np.array(Image.open(reg_photo_source))
+                            
+                            # Check for duplicate face if not bypassed
+                            if not bypass_check:
+                                detected, _, _ = predict_attendance(img)
+                                if detected:
+                                    student_id = list(detected.keys())[0]
+                                    all_students = get_all_students()
+                                    matched_student = next((s for s in all_students if s['student_id'] == student_id), None)
+                                    if matched_student:
+                                        st.error(f"❌ Registration Blocked: This face is already registered as **{matched_student['name']}** (Roll: {matched_student.get('roll_number', 'N/A')}).")
+                                        st.info("💡 If this is you, please use the **🔑 FaceID Login** tab. If this is a false match, check the 'Bypass duplicate face detection' box above and click Create Account again.")
+                                        st.stop()
+
+                            encodings = get_face_embeddings(img)
                             if encodings:
                                 face_emb = encodings[0].tolist()
 
@@ -202,11 +233,8 @@ def student_screen():
                                     time.sleep(1)
                                     st.rerun()
                             else:
-                                st.error('Couldnt capture your facial features for registration')
-
+                                st.error('Could not capture your facial features. Please position your face clearly in the camera and try again.')
                 else:
                     st.warning('Please enter both your name and roll number!')
 
-
-        
     footer_dashboard()
