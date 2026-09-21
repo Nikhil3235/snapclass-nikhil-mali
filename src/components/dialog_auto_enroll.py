@@ -6,8 +6,9 @@ import time
 
 @st.dialog("Confirm Enrollment")
 def auto_enroll_dialog(join_code):
-    # Fetch subject details using the join_code
-    res = supabase.table('subjects').select('subject_id, name, subject_code').eq('subject_code', join_code).execute()
+    join_code_clean = str(join_code).strip() if join_code else ""
+    # Fetch subject details using the join_code (case-insensitive)
+    res = supabase.table('subjects').select('subject_id, name, subject_code').ilike('subject_code', join_code_clean).execute()
     
     if res.data:
         subject = res.data[0]
