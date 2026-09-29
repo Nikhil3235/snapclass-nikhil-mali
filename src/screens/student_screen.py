@@ -171,7 +171,7 @@ def student_screen():
     with tab_register:
         st.subheader("Register New Profile")
         with st.container(border=True):
-            new_name = st.text_input("Enter your name", placeholder='E.g. Nikhil Mali', key="reg_name")
+            new_name = st.text_input("Enter your name", placeholder='E.g. Student Name', key="reg_name")
             new_roll = st.text_input("Enter your Roll Number", placeholder='E.g. 21BCS101', key="reg_roll")
 
             st.write("Take a photo of your face for FaceID registration:")

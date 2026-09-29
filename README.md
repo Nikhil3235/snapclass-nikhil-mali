@@ -75,5 +75,4 @@ Contributions are welcome! Feel free to open an issue or submit a pull request.
 ## 📄 License
 This project is for educational purposes.
 
----
-*Developed with ❤️ by [Nikhil Mali](https://github.com/Nikhil3235)*
+*Developed with ❤️ by **Team BizTechX***

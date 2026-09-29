@@ -3,24 +3,20 @@ import streamlit as st
 
 
 def footer_home():
-    logo_url = "https://i.ibb.co/xqnrCR4q/Chat-GPT-Image-May-15-2026-03-43-07-AM.png"
-    
-    st.markdown(f"""
-        <div style="margin-top:2rem; display:flex; gap:6px; justify-content:center; items-align:center">
-        <p style="font-weight:bold; color:white;"> Created with ❤️ by </p>  
-        <img src='{logo_url}' style='max-height:25px' />
+    st.markdown("""
+        <div style="margin-top:2rem; display:flex; gap:6px; justify-content:center; align-items:center">
+        <p style="font-weight:bold; color:white; margin:0;"> Created with ❤️ by </p>  
+        <span style="font-weight:800; font-size:1.15rem; color:#E0E3FF; letter-spacing:0.5px;">BizTechX</span>
         </div>
                 
                 """, unsafe_allow_html=True)
 
 
 def footer_dashboard():
-    logo_url = "https://i.ibb.co/xqnrCR4q/Chat-GPT-Image-May-15-2026-03-43-07-AM.png"
-    
-    st.markdown(f"""
-        <div style="margin-top:2rem; display:flex; gap:6px; justify-content:center; items-align:center">
-        <p style="font-weight:bold; color:black;"> Created with ❤️ by </p>  
-        <img src='{logo_url}' style='max-height:25px' />
+    st.markdown("""
+        <div style="margin-top:2rem; display:flex; gap:6px; justify-content:center; align-items:center">
+        <p style="font-weight:bold; color:black; margin:0;"> Created with ❤️ by </p>  
+        <span style="font-weight:800; font-size:1.15rem; color:#5865F2; letter-spacing:0.5px;">BizTechX</span>
         </div>
                 
                 """, unsafe_allow_html=True)
