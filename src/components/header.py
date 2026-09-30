@@ -1,10 +1,21 @@
 # pyrefly: ignore [missing-import]
 import streamlit as st
+import base64
+import os
+
+
+def _get_logo_base64():
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    logo_path = os.path.join(base_dir, "assets", "logo.png")
+    if os.path.exists(logo_path):
+        with open(logo_path, "rb") as f:
+            return f"data:image/png;base64,{base64.b64encode(f.read()).decode()}"
+    return "https://i.ibb.co/YTYGn5qV/logo.png"
 
 
 def header_home():
 
-    logo_url = "https://i.ibb.co/YTYGn5qV/logo.png"
+    logo_url = _get_logo_base64()
     landing_page_url = "https://snap-class-landing-page-ruby.vercel.app/"
     
     st.markdown(f"""
@@ -63,7 +74,7 @@ def header_home():
 
 def header_dashboard():
 
-    logo_url = "https://i.ibb.co/YTYGn5qV/logo.png"
+    logo_url = _get_logo_base64()
     
     st.markdown(f"""
         <div style="display:flex; align-items:center; justify-content:center; gap:10px">

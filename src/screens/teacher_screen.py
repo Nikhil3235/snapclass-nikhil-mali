@@ -288,8 +288,24 @@ def teacher_tab_attendance_records():
     
     st.dataframe(display_df, width='stretch', hide_index=True)
 
+    c_dl1, c_dl2 = st.columns(2)
+    with c_dl1:
+        csv_records = display_df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Download All Records CSV",
+            data=csv_records,
+            file_name=f"All_Attendance_Records_{datetime.now().strftime('%Y%m%d')}.csv",
+            mime="text/csv",
+            icon=":material/download:",
+            use_container_width=True
+        )
+    with c_dl2:
+        saved_sheet = st.session_state.get('teacher_portal_url', '')
+        if saved_sheet:
+            st.link_button("🌐 Open Teacher's Marksheet Portal", saved_sheet, icon=":material/open_in_new:", use_container_width=True)
+        else:
+            st.info("💡 Set your marksheet link when taking attendance to enable 1-click sync.")
 
-def login_teacher(username, password):
     if not username or not password:
         return False
     
