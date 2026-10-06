@@ -75,4 +75,4 @@ Contributions are welcome! Feel free to open an issue or submit a pull request.
 ## 📄 License
 This project is for educational purposes.
 
-*Developed with ❤️ by **Team BizTechX***
+*Developed with ❤️ by **Team AI_AVENGERS***
