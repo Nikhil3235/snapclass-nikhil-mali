@@ -306,6 +306,8 @@ def teacher_tab_attendance_records():
         else:
             st.info("💡 Set your marksheet link when taking attendance to enable 1-click sync.")
 
+
+def login_teacher(username, password):
     if not username or not password:
         return False
     
@@ -319,6 +321,8 @@ def teacher_tab_attendance_records():
     
 
     return False
+
+
 def teacher_screen_login():
     c1, c2 = st.columns(2, vertical_alignment='center', gap='xxlarge')
     with c1:
