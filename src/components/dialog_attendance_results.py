@@ -13,7 +13,10 @@ def show_attendance_result(df, logs):
     st.write('Please review attendance before confirming.')
     
     total_students = len(df)
-    present_count = int((df['Status'] == 'Present').sum()) if 'Status' in df.columns else 0
+    if 'Status' in df.columns:
+        present_count = int(df['Status'].astype(str).str.contains('Present', case=False, na=False).sum())
+    else:
+        present_count = 0
     absent_count = total_students - present_count
     
     m1, m2, m3 = st.columns(3)
