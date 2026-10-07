@@ -6,7 +6,11 @@ from src.ui.base_layout import style_background_dashboard, style_base_layout
 from src.components.header import header_dashboard
 from src.components.footer import footer_dashboard
 from src.components.subject_card import subject_card
-from src.database.db import check_teacher_exists, create_teacher, teacher_login, get_teacher_subjects, get_attendance_for_teacher
+from src.database.db import (
+    check_teacher_exists, create_teacher, teacher_login, 
+    get_teacher_subjects, get_attendance_for_teacher,
+    get_subject_student_analytics
+)
 from src.components.dialog_create_subject import create_subject_dialog
 from src.components.dialog_share_subject import share_subject_dialog
 from src.components.dialog_add_photo import add_photos_dialog
@@ -19,6 +23,7 @@ import numpy as np
 from datetime import datetime
 
 import pandas as pd
+import altair as alt
 
 from src.database.config import supabase
 
@@ -93,7 +98,138 @@ def teacher_dashboard():
     
 
 
+    # Teacher Subject Attendance Analytics Section (Visible on scroll)
+    teacher_subject_attendance_analytics()
+
     footer_dashboard()
+
+
+def teacher_subject_attendance_analytics():
+    teacher_id = st.session_state.teacher_data['teacher_id']
+    st.markdown("---")
+    st.subheader("\U0001f4ca Subject Attendance Analytics & Insights")
+
+    subjects = get_teacher_subjects(teacher_id)
+    if not subjects:
+        st.info("\u2139\ufe0f You haven't created any subjects yet. Create a subject above to view attendance analytics.")
+        return
+
+    subject_options = {
+        f"{s['name']} ({s['subject_code']}) - Section {s.get('section', 'A')}": s['subject_id'] 
+        for s in subjects
+    }
+
+    selected_label = st.selectbox(
+        "Select Subject to View Student Attendance Breakdown",
+        options=list(subject_options.keys()),
+        key="analytics_subject_select"
+    )
+    selected_subject_id = subject_options[selected_label]
+
+    with st.spinner("Analyzing student attendance data..."):
+        analytics, total_sessions = get_subject_student_analytics(selected_subject_id)
+
+    if not analytics:
+        st.info("\u2139\ufe0f No students are enrolled in this subject yet. Share the subject code with students to enroll.")
+        return
+
+    df = pd.DataFrame(analytics)
+
+    total_enrolled = len(df)
+    avg_pct = round(df['Percentage'].mean(), 1) if total_enrolled > 0 else 0.0
+    safe_count = sum(1 for a in analytics if a['Percentage'] >= 75.0)
+    warning_count = sum(1 for a in analytics if 60.0 <= a['Percentage'] < 75.0)
+    defaulter_count = sum(1 for a in analytics if a['Percentage'] < 60.0)
+
+    # KPI summary cards
+    k1, k2, k3, k4, k5 = st.columns(5)
+    with k1:
+        st.metric("Enrolled Students", total_enrolled)
+    with k2:
+        st.metric("Classes Conducted", total_sessions)
+    with k3:
+        st.metric("Batch Average", f"{avg_pct:.1f}%")
+    with k4:
+        st.metric("\U0001f7e2 Safe (>=75%)", safe_count)
+    with k5:
+        st.metric("\U0001f534 Defaulters (<60%)", defaulter_count)
+
+    if total_sessions == 0:
+        st.warning("\u26a0\ufe0f No attendance sessions have been conducted for this subject yet. Take attendance above to see graphical charts.")
+        return
+
+    # Altair Chart: Student Attendance Percentage
+    color_scale = alt.Scale(
+        domain=['\U0001f7e2 Safe (>=75%)', '\U0001f7e0 Warning (60-74%)', '\U0001f534 Defaulter (<60%)'],
+        range=['#22c55e', '#f97316', '#ef4444']
+    )
+
+    bars = alt.Chart(df).mark_bar(cornerRadiusEnd=5, height=22).encode(
+        y=alt.Y('Student:N', title='Student Name', sort='-x'),
+        x=alt.X('Percentage:Q', title='Attendance Percentage (%)', scale=alt.Scale(domain=[0, 100])),
+        color=alt.Color('Status:N', scale=color_scale, legend=alt.Legend(title="Attendance Status", orient="bottom")),
+        tooltip=[
+            alt.Tooltip('Student:N', title='Student'),
+            alt.Tooltip('Roll Number:N', title='Roll No'),
+            alt.Tooltip('Percentage:Q', title='Attendance %', format='.1f'),
+            alt.Tooltip('Attended:Q', title='Present Classes'),
+            alt.Tooltip('Total Classes:Q', title='Total Classes'),
+            alt.Tooltip('Status:N', title='Status')
+        ]
+    )
+
+    text = alt.Chart(df).mark_text(
+        align='left',
+        baseline='middle',
+        dx=5,
+        fontSize=11,
+        fontWeight='bold'
+    ).encode(
+        y=alt.Y('Student:N', sort='-x'),
+        x=alt.X('Percentage:Q'),
+        text=alt.Text('Percentage:Q', format='.1f')
+    )
+
+    # 75% Criteria Line
+    rule_df = pd.DataFrame({'Threshold': [75.0], 'Label': ['75% Target Line']})
+    rule = alt.Chart(rule_df).mark_rule(
+        color='#ef4444',
+        strokeDash=[5, 5],
+        size=2
+    ).encode(
+        x='Threshold:Q'
+    )
+    rule_label = alt.Chart(rule_df).mark_text(
+        align='center',
+        baseline='bottom',
+        dy=-10,
+        color='#ef4444',
+        fontSize=11,
+        fontWeight='bold'
+    ).encode(
+        x='Threshold:Q',
+        text='Label:N'
+    )
+
+    chart = (bars + text + rule + rule_label).properties(
+        title="Student-wise Attendance Overview",
+        height=max(200, len(analytics) * 34)
+    ).configure_view(strokeWidth=0)
+
+    st.altair_chart(chart, use_container_width=True)
+
+    with st.expander("\U0001f4cb View Detailed Student Table & Export"):
+        display_df = df[['Roll Number', 'Student', 'Attended', 'Total Classes', 'Percentage', 'Status']].sort_values(by='Roll Number')
+        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        csv = display_df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="\U0001f4e5 Download Subject Attendance Report (CSV)",
+            data=csv,
+            file_name=f"{selected_label.split(' ')[0]}_attendance_report.csv",
+            mime="text/csv",
+            key=f"dl_csv_{selected_subject_id}"
+        )
+
 
 def teacher_tab_take_attendance():
     teacher_id = st.session_state.teacher_data['teacher_id']

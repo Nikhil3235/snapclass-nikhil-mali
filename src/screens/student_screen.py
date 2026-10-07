@@ -18,6 +18,8 @@ from src.database.db import (
     check_pass, hash_pass
 )
 import time
+import pandas as pd
+import altair as alt
 
 from src.components.dialog_enroll import enroll_dialog
 from src.components.subject_card import subject_card
@@ -122,6 +124,132 @@ def student_dashboard():
                 update_student_password(student_id, new_p.strip())
                 student_data['password'] = hash_pass(new_p.strip())
                 st.success("✅ Password updated successfully!")
+
+    # Student Attendance Data Visualization
+    st.markdown("---")
+    st.subheader("📊 My Attendance Analytics & Insights")
+
+    if not subjects:
+        st.info("ℹ️ You are not enrolled in any subjects yet. Enroll in a subject above to view attendance analytics.")
+    else:
+        chart_data = []
+        total_attended_all = 0
+        total_classes_all = 0
+
+        for sub_node in subjects:
+            sub = sub_node.get('subjects') or {}
+            sid = sub.get('subject_id')
+            name = sub.get('name', 'Unknown')
+            code = sub.get('subject_code', '')
+            display_name = f"{name} ({code})" if code else name
+
+            stats = stats_map.get(sid, {"total": 0, "attended": 0})
+            total = stats['total']
+            attended = stats['attended']
+            pct = round((attended / total * 100), 1) if total > 0 else 0.0
+
+            total_attended_all += attended
+            total_classes_all += total
+
+            if pct >= 75.0:
+                status = '🟢 Safe (>=75%)'
+                color = '#22c55e'
+            elif pct >= 60.0:
+                status = '🟠 Warning (60-74%)'
+                color = '#f97316'
+            else:
+                status = '🔴 Defaulter (<60%)'
+                color = '#ef4444'
+
+            chart_data.append({
+                'Subject': display_name,
+                'Attended': attended,
+                'Total': total,
+                'Percentage': pct,
+                'Status': status,
+                'Color': color
+            })
+
+        df_chart = pd.DataFrame(chart_data)
+
+        overall_pct = round((total_attended_all / total_classes_all * 100), 1) if total_classes_all > 0 else 0.0
+        safe_count = sum(1 for d in chart_data if d['Percentage'] >= 75.0)
+        warning_count = sum(1 for d in chart_data if 60.0 <= d['Percentage'] < 75.0)
+        defaulter_count = sum(1 for d in chart_data if d['Percentage'] < 60.0)
+
+        # KPI Summary Cards
+        m1, m2, m3, m4, m5 = st.columns(5)
+        with m1:
+            st.metric("Overall Attendance", f"{overall_pct:.1f}%")
+        with m2:
+            st.metric("Total Classes Attended", f"{total_attended_all}/{total_classes_all}")
+        with m3:
+            st.metric("🟢 Safe (≥75%)", safe_count)
+        with m4:
+            st.metric("🟠 Warning (60-74%)", warning_count)
+        with m5:
+            st.metric("🔴 Defaulter (<60%)", defaulter_count)
+
+        if total_classes_all == 0:
+            st.info("ℹ️ No attendance records found yet for your enrolled subjects.")
+        else:
+            # Altair Horizontal Bar Chart
+            color_scale = alt.Scale(
+                domain=['🟢 Safe (>=75%)', '🟠 Warning (60-74%)', '🔴 Defaulter (<60%)'],
+                range=['#22c55e', '#f97316', '#ef4444']
+            )
+
+            bars = alt.Chart(df_chart).mark_bar(cornerRadiusEnd=5, height=24).encode(
+                y=alt.Y('Subject:N', title='Enrolled Subject', sort='-x'),
+                x=alt.X('Percentage:Q', title='Attendance Percentage (%)', scale=alt.Scale(domain=[0, 100])),
+                color=alt.Color('Status:N', scale=color_scale, legend=alt.Legend(title="Attendance Health", orient="bottom")),
+                tooltip=[
+                    alt.Tooltip('Subject:N', title='Subject'),
+                    alt.Tooltip('Percentage:Q', title='Attendance %', format='.1f'),
+                    alt.Tooltip('Attended:Q', title='Attended Classes'),
+                    alt.Tooltip('Total:Q', title='Total Classes'),
+                    alt.Tooltip('Status:N', title='Status')
+                ]
+            )
+
+            text = alt.Chart(df_chart).mark_text(
+                align='left',
+                baseline='middle',
+                dx=5,
+                fontSize=11,
+                fontWeight='bold'
+            ).encode(
+                y=alt.Y('Subject:N', sort='-x'),
+                x=alt.X('Percentage:Q'),
+                text=alt.Text('Percentage:Q', format='.1f')
+            )
+
+            rule_df = pd.DataFrame({'Threshold': [75.0], 'Label': ['75% Target Line']})
+            rule = alt.Chart(rule_df).mark_rule(
+                color='#ef4444',
+                strokeDash=[5, 5],
+                size=2
+            ).encode(
+                x='Threshold:Q'
+            )
+            rule_label = alt.Chart(rule_df).mark_text(
+                align='center',
+                baseline='bottom',
+                dy=-10,
+                color='#ef4444',
+                fontSize=11,
+                fontWeight='bold'
+            ).encode(
+                x='Threshold:Q',
+                text='Label:N'
+            )
+
+            chart = (bars + text + rule + rule_label).properties(
+                title="Subject-wise Attendance Breakdown",
+                height=max(180, len(chart_data) * 45)
+            ).configure_view(strokeWidth=0)
+
+            st.altair_chart(chart, use_container_width=True)
 
     footer_dashboard()
 

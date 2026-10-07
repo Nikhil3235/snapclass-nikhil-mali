@@ -119,3 +119,46 @@ def create_attendance(logs):
 def get_attendance_for_teacher(teacher_id):
     response = supabase.table('attendance_logs').select("*, subjects!inner(*)").eq('subjects.teacher_id', teacher_id).execute()
     return response.data
+
+
+def get_subject_student_analytics(subject_id):
+    enrolled_res = supabase.table('subject_students').select("*, students(*)").eq('subject_id', subject_id).execute()
+    enrolled = enrolled_res.data or []
+
+    logs_res = supabase.table('attendance_logs').select("*").eq('subject_id', subject_id).execute()
+    logs = logs_res.data or []
+
+    sessions = set(log.get('timestamp') for log in logs if log.get('timestamp'))
+    total_sessions = len(sessions)
+
+    analytics = []
+    for item in enrolled:
+        st_data = item.get('students') or {}
+        st_id = st_data.get('student_id')
+        name = st_data.get('name', 'Unknown')
+        roll = st_data.get('roll_number', 'N/A')
+
+        attended = sum(1 for log in logs if log.get('student_id') == st_id and log.get('is_present'))
+        percentage = round((attended / total_sessions * 100), 1) if total_sessions > 0 else 0.0
+
+        if percentage >= 75.0:
+            status = '🟢 Safe (>=75%)'
+            color = '#22c55e'
+        elif percentage >= 60.0:
+            status = '🟠 Warning (60-74%)'
+            color = '#f97316'
+        else:
+            status = '🔴 Defaulter (<60%)'
+            color = '#ef4444'
+
+        analytics.append({
+            'Student': name,
+            'Roll Number': roll,
+            'Attended': attended,
+            'Total Classes': total_sessions,
+            'Percentage': percentage,
+            'Status': status,
+            'Color': color
+        })
+
+    return analytics, total_sessions

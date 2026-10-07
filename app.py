@@ -1,5 +1,10 @@
 # pyrefly: ignore [missing-import]
 import streamlit as st
+import importlib
+import src.components.footer
+
+# Ensure latest team branding (AI_AVENGERS) is fresh in memory
+importlib.reload(src.components.footer)
 
 from src.screens.home_screen import home_screen
 from src.screens.teacher_screen import teacher_screen
