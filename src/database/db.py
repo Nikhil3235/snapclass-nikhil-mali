@@ -161,4 +161,78 @@ def get_subject_student_analytics(subject_id):
             'Color': color
         })
 
-    return analytics, total_sessions
+    return analytics, total_sessions
+
+
+def get_admin_dashboard_data():
+    teachers_res = supabase.table('teachers').select('*').execute()
+    teachers = teachers_res.data or []
+    
+    students_res = supabase.table('students').select('*').execute()
+    students = students_res.data or []
+
+    subjects_res = supabase.table('subjects').select('*, teachers(name, username), subject_students(count), attendance_logs(timestamp, is_present)').execute()
+    raw_subjects = subjects_res.data or []
+
+    subject_summaries = []
+    total_classes_all = 0
+    total_present_all = 0
+    total_attendance_records_all = 0
+
+    for sub in raw_subjects:
+        teacher_info = sub.get('teachers') or {}
+        teacher_name = teacher_info.get('name') or teacher_info.get('username') or 'Unknown Faculty'
+        
+        enrolled_count = sub.get('subject_students', [{}])[0].get('count', 0) if sub.get('subject_students') else 0
+        
+        logs = sub.get('attendance_logs') or []
+        sessions = set(log.get('timestamp') for log in logs if log.get('timestamp'))
+        total_sessions = len(sessions)
+        
+        presents = sum(1 for log in logs if log.get('is_present'))
+        total_logs = len(logs)
+        
+        avg_pct = round((presents / total_logs * 100), 1) if total_logs > 0 else 0.0
+        
+        if avg_pct >= 75.0:
+            health = '🟢 Safe (≥75%)'
+            color = '#22c55e'
+        elif avg_pct >= 60.0:
+            health = '🟠 Warning (60-74%)'
+            color = '#f97316'
+        else:
+            health = '🔴 Low Attendance (<60%)'
+            color = '#ef4444'
+
+        total_classes_all += total_sessions
+        total_present_all += presents
+        total_attendance_records_all += total_logs
+
+        subject_summaries.append({
+            'subject_id': sub.get('subject_id'),
+            'subject_name': sub.get('name', 'Unknown'),
+            'subject_code': sub.get('subject_code', 'N/A'),
+            'section': sub.get('section', 'A'),
+            'teacher_name': teacher_name,
+            'teacher_id': sub.get('teacher_id'),
+            'enrolled_students': enrolled_count,
+            'classes_conducted': total_sessions,
+            'total_logs': total_logs,
+            'average_attendance': avg_pct,
+            'health_status': health,
+            'color': color
+        })
+
+    inst_avg = round((total_present_all / total_attendance_records_all * 100), 1) if total_attendance_records_all > 0 else 0.0
+    low_attendance_classes = sum(1 for s in subject_summaries if s['average_attendance'] < 75.0 and s['classes_conducted'] > 0)
+
+    summary_metrics = {
+        'total_teachers': len(teachers),
+        'total_students': len(students),
+        'total_subjects': len(raw_subjects),
+        'total_classes_conducted': total_classes_all,
+        'institute_avg_attendance': inst_avg,
+        'low_attendance_classes': low_attendance_classes
+    }
+
+    return summary_metrics, subject_summaries, teachers
