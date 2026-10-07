@@ -6,6 +6,7 @@ def style_background_home():
 
     st.markdown("""
         <style>
+                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap');
 
                 .stApp {
                     background: #5865F2 !important;
@@ -31,16 +32,23 @@ def style_background_home():
                     box-shadow: 0 12px 30px rgba(0,0,0,0.12) !important;
                 }
 
-                /* Headings: never break words into separate lines */
-                .stApp div[data-testid="stColumn"] h2 {
-                    font-family: 'Climate Crisis', sans-serif !important;
-                    font-size: 1.45rem !important;
-                    line-height: 1.2 !important;
+                /* Portal Title: Modern bold font, strictly on ONE clean line */
+                .portal-title {
+                    font-family: 'Outfit', sans-serif !important;
+                    font-size: 1.65rem !important;
+                    font-weight: 800 !important;
+                    color: #1e1e2f !important;
+                    text-align: center !important;
                     white-space: nowrap !important;
                     word-break: keep-all !important;
-                    overflow: visible !important;
-                    margin: 0.2rem 0 1rem 0 !important;
-                    text-align: center !important;
+                    letter-spacing: -0.5px !important;
+                    margin: 0.2rem 0 1.2rem 0 !important;
+                    display: block !important;
+                }
+
+                /* Hide any unwanted link anchor icons */
+                .stApp div[data-testid="stColumn"] a {
+                    display: none !important;
                 }
 
                 /* Standardize avatar sizing and round corners */
@@ -54,11 +62,18 @@ def style_background_home():
                 /* Button: keep label on single line without truncation */
                 .stApp div[data-testid="stColumn"] button {
                     white-space: nowrap !important;
-                    font-size: 0.95rem !important;
-                    font-weight: 600 !important;
                     padding: 10px 14px !important;
-                    margin-top: 1rem !important;
+                    margin-top: 1.2rem !important;
                     width: 100% !important;
+                }
+
+                .stApp div[data-testid="stColumn"] button p {
+                    font-family: 'Outfit', sans-serif !important;
+                    font-size: 0.95rem !important;
+                    font-weight: 700 !important;
+                    white-space: nowrap !important;
+                    overflow: visible !important;
+                    text-overflow: clip !important;
                 }
         </style>  
 
