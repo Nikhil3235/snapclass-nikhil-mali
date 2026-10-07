@@ -48,14 +48,22 @@ def get_all_students():
     response = supabase.table('students').select("*").execute()
     return response.data
 
-def create_student(new_name, roll_number, face_embedding=None, voice_embedding=None):
+def create_student(new_name, roll_number, password=None, face_embedding=None, voice_embedding=None):
     data = {
         'name': new_name, 
         'roll_number': str(roll_number).strip(),
-        'face_embedding':face_embedding, 
+        'face_embedding': face_embedding, 
         "voice_embedding": voice_embedding
     }
+    if password:
+        data['password'] = hash_pass(password)
     response = supabase.table('students').insert(data).execute()
+    return response.data
+
+
+def update_student_password(student_id, new_password):
+    hashed = hash_pass(new_password)
+    response = supabase.table('students').update({'password': hashed}).eq('student_id', student_id).execute()
     return response.data
 
 

@@ -11,7 +11,12 @@ from PIL import Image
 import numpy as np
 from src.pipelines.face_pipeline import predict_attendance, get_face_embeddings, train_classifier
 from src.pipelines.voice_pipeline import get_voice_embedding
-from src.database.db import get_all_students, create_student, get_student_subjects, get_student_attendance, unenroll_student_to_subject, check_student_exists_by_roll
+from src.database.db import (
+    get_all_students, create_student, get_student_subjects,
+    get_student_attendance, unenroll_student_to_subject,
+    check_student_exists_by_roll, update_student_password,
+    check_pass, hash_pass
+)
 import time
 
 from src.components.dialog_enroll import enroll_dialog
@@ -100,6 +105,24 @@ def student_dashboard():
             
             if percentage < 75.0 and stats['total'] > 0:
                 st.warning(f"You need to increase attendance in {sub['name']} (Current: {percentage:.1f}%)")
+
+    st.markdown("---")
+    with st.expander("🔐 Security Settings: Change Password"):
+        c_p1, c_p2 = st.columns(2)
+        with c_p1:
+            curr_p = st.text_input("Current Password", type="password", key="chg_curr_pwd")
+        with c_p2:
+            new_p = st.text_input("New Password (min 4 chars)", type="password", key="chg_new_pwd")
+        if st.button("Update Password", type="primary", key="update_pwd_btn"):
+            if student_data.get('password') and not check_pass(curr_p, student_data['password']):
+                st.error("❌ Current password does not match!")
+            elif not new_p or len(new_p.strip()) < 4:
+                st.warning("New password must be at least 4 characters!")
+            else:
+                update_student_password(student_id, new_p.strip())
+                student_data['password'] = hash_pass(new_p.strip())
+                st.success("✅ Password updated successfully!")
+
     footer_dashboard()
 
 
@@ -149,20 +172,49 @@ def student_screen():
 
                         if student:
                             st.success(f"Recognized Face: **{student['name']}** (Roll: {student.get('roll_number', 'N/A')})")
-                            st.info("Is this you? Please confirm to login:")
                             
-                            col_yes, col_no = st.columns(2)
-                            with col_yes:
-                                if st.button("Yes, Log Me In", type="primary", key="confirm_login_btn", width="stretch"):
-                                    st.session_state.is_logged_in = True
-                                    st.session_state.user_role = 'student'
-                                    st.session_state.student_data = student
-                                    st.toast(f"Welcome Back {student['name']}!")
-                                    time.sleep(1)
-                                    st.rerun()
-                            with col_no:
-                                if st.button("No, this is not me", type="secondary", key="reject_login_btn", width="stretch"):
-                                    st.warning("If you are a new student, please switch to the 'New Student Registration' tab to register.")
+                            has_pwd = bool(student.get('password'))
+                            if has_pwd:
+                                st.info("🔐 Security Check: Enter your secret password to unlock your account.")
+                                entered_pwd = st.text_input("Enter Password", type="password", key="login_student_pwd")
+                                
+                                col_yes, col_no = st.columns(2)
+                                with col_yes:
+                                    if st.button("Unlock & Log In", type="primary", key="confirm_login_btn", width="stretch"):
+                                        if entered_pwd and check_pass(entered_pwd, student['password']):
+                                            st.session_state.is_logged_in = True
+                                            st.session_state.user_role = 'student'
+                                            st.session_state.student_data = student
+                                            st.toast(f"Welcome Back {student['name']}!")
+                                            time.sleep(1)
+                                            st.rerun()
+                                        else:
+                                            st.error("❌ Incorrect Password! Security check failed.")
+                                with col_no:
+                                    if st.button("Cancel", type="secondary", key="reject_login_btn", width="stretch"):
+                                        st.rerun()
+                            else:
+                                st.warning("⚠️ Security Setup: You haven't set a password yet.")
+                                st.write("Set a secret password now to protect your account against unauthorized access:")
+                                setup_pwd = st.text_input("Create Secret Password (min 4 chars)", type="password", key="setup_student_pwd")
+                                
+                                col_setup, col_cancel = st.columns(2)
+                                with col_setup:
+                                    if st.button("Save Password & Log In", type="primary", key="save_setup_pwd_btn", width="stretch"):
+                                        if not setup_pwd or len(setup_pwd.strip()) < 4:
+                                            st.warning("Password must be at least 4 characters!")
+                                        else:
+                                            update_student_password(student['student_id'], setup_pwd.strip())
+                                            student['password'] = hash_pass(setup_pwd.strip())
+                                            st.session_state.is_logged_in = True
+                                            st.session_state.user_role = 'student'
+                                            st.session_state.student_data = student
+                                            st.toast(f"Password Set! Welcome {student['name']}!")
+                                            time.sleep(1)
+                                            st.rerun()
+                                with col_cancel:
+                                    if st.button("Cancel", type="secondary", key="reject_login_btn", width="stretch"):
+                                        st.rerun()
                         else:
                             st.info("Face recognized, but student profile not found in database.")
                     else:
@@ -173,6 +225,7 @@ def student_screen():
         with st.container(border=True):
             new_name = st.text_input("Enter your name", placeholder='E.g. Student Name', key="reg_name")
             new_roll = st.text_input("Enter your Roll Number", placeholder='E.g. 21BCS101', key="reg_roll")
+            new_pwd = st.text_input("Create Security Password / PIN", type="password", placeholder="Enter secret password (min 4 chars)...", key="reg_pwd")
 
             st.write("Take a photo of your face for FaceID registration:")
             reg_photo_source = st.camera_input("Capture registration photo", key="register_camera")
@@ -189,8 +242,10 @@ def student_screen():
             bypass_check = st.checkbox("Bypass duplicate face detection (Use only if face matches someone else incorrectly)", key="bypass_dup_check")
 
             if st.button('Create Account', type='primary', key="reg_create_btn", width="stretch"):
-                if new_name and new_roll:
-                    if not reg_photo_source:
+                if new_name and new_roll and new_pwd:
+                    if len(new_pwd.strip()) < 4:
+                        st.warning("Password must be at least 4 characters long!")
+                    elif not reg_photo_source:
                         st.error("Please capture your face photo using the camera above to register.")
                     elif check_student_exists_by_roll(new_roll):
                         st.error(f'Roll Number {new_roll} is already registered! Please use your correct roll number.')
@@ -219,7 +274,7 @@ def student_screen():
                                     voice_emb = get_voice_embedding(audio_data.read())
 
                                 try:
-                                    response_data = create_student(new_name, new_roll, face_embedding=face_emb, voice_embedding=voice_emb)
+                                    response_data = create_student(new_name, new_roll, password=new_pwd.strip(), face_embedding=face_emb, voice_embedding=voice_emb)
                                 except Exception as e:
                                     st.error(f"Failed to create profile: {e}")
                                     response_data = None
@@ -235,6 +290,6 @@ def student_screen():
                             else:
                                 st.error('Could not capture your facial features. Please position your face clearly in the camera and try again.')
                 else:
-                    st.warning('Please enter both your name and roll number!')
+                    st.warning('Please enter your name, roll number, and password!')
 
     footer_dashboard()
