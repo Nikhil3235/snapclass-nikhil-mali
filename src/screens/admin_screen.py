@@ -61,21 +61,25 @@ def admin_dashboard():
     # 1. Executive KPI Cards
     k1, k2, k3, k4, k5 = st.columns(5)
     with k1:
-        st.metric("Total Faculty", metrics['total_teachers'], help="Total registered teachers")
+        with st.container(border=True):
+            st.metric("👨‍🏫 Faculty", metrics['total_teachers'])
     with k2:
-        st.metric("Enrolled Students", metrics['total_students'], help="Total students in institute")
+        with st.container(border=True):
+            st.metric("🎓 Students", metrics['total_students'])
     with k3:
-        st.metric("Active Courses", metrics['total_subjects'], help="Total subjects & sections")
+        with st.container(border=True):
+            st.metric("📚 Courses", metrics['total_subjects'])
     with k4:
-        st.metric("Institute Avg Attendance", f"{metrics['institute_avg_attendance']:.1f}%", help="Overall college attendance")
+        with st.container(border=True):
+            st.metric("📊 Avg Attendance", f"{metrics['institute_avg_attendance']:.1f}%")
     with k5:
-        st.metric(
-            "⚠️ Attention Needed", 
-            metrics['low_attendance_classes'],
-            delta=f"{metrics['low_attendance_classes']} classes < 75%",
-            delta_color="inverse",
-            help="Classes with average attendance below 75%"
-        )
+        with st.container(border=True):
+            st.metric(
+                "⚠️ Low Classes", 
+                metrics['low_attendance_classes'],
+                delta=f"{metrics['low_attendance_classes']} (<75%)" if metrics['low_attendance_classes'] > 0 else "All Safe",
+                delta_color="inverse" if metrics['low_attendance_classes'] > 0 else "normal"
+            )
 
     st.markdown("---")
 
