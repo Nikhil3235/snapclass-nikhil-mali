@@ -11,11 +11,55 @@ def style_background_home():
                     background: #5865F2 !important;
                 }
 
-                .stApp div[data-testid="stColumn"]{
-                    background-color:#E0E3FF !important;
-                    padding:2.5rem !important;
-                    border-radius: 5rem !important;
-                    }
+                /* Space out the 3 portal cards */
+                .stApp div[data-testid="stHorizontalBlock"] {
+                    gap: 1.8rem !important;
+                    align-items: stretch !important;
+                }
+
+                /* Card container with identical height and width */
+                .stApp div[data-testid="stColumn"] {
+                    background-color: #E0E3FF !important;
+                    padding: 2.2rem 1.2rem !important;
+                    border-radius: 4rem !important;
+                    display: flex !important;
+                    flex-direction: column !important;
+                    align-items: center !important;
+                    justify-content: space-between !important;
+                    text-align: center !important;
+                    min-height: 480px !important;
+                    box-shadow: 0 12px 30px rgba(0,0,0,0.12) !important;
+                }
+
+                /* Headings: never break words into separate lines */
+                .stApp div[data-testid="stColumn"] h2 {
+                    font-family: 'Climate Crisis', sans-serif !important;
+                    font-size: 1.45rem !important;
+                    line-height: 1.2 !important;
+                    white-space: nowrap !important;
+                    word-break: keep-all !important;
+                    overflow: visible !important;
+                    margin: 0.2rem 0 1rem 0 !important;
+                    text-align: center !important;
+                }
+
+                /* Standardize avatar sizing and round corners */
+                .stApp div[data-testid="stColumn"] img {
+                    border-radius: 1.5rem !important;
+                    margin: 0 auto !important;
+                    display: block !important;
+                    box-shadow: 0 6px 18px rgba(0,0,0,0.2) !important;
+                }
+
+                /* Button: keep label on single line without truncation */
+                .stApp div[data-testid="stColumn"] button {
+                    white-space: nowrap !important;
+                    font-size: 0.95rem !important;
+                    font-weight: 600 !important;
+                    padding: 10px 14px !important;
+                    margin-top: 1rem !important;
+                    width: 100% !important;
+                }
         </style>  
 
                 """

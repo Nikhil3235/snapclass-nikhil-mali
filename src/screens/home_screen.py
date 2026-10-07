@@ -11,25 +11,25 @@ def home_screen():
     style_base_layout()
 
 
-    col1, col2, col3 = st.columns(3, gap="medium")
+    col1, col2, col3 = st.columns(3, gap="large")
 
     with col1:
         st.header("I'm Student")
-        st.image("assets/student.png", width=120)
+        st.image("assets/student.png", width=140)
         if st.button('Student Portal', type='primary', icon=':material/arrow_outward:', icon_position='right', width="stretch"):
             st.session_state['login_type']='student'
             st.rerun()
 
     with col2:
         st.header("I'm Teacher")
-        st.image("assets/teacher.png", width=145)
+        st.image("assets/teacher.png", width=140)
         if st.button('Teacher Portal', type='primary', icon=':material/arrow_outward:', icon_position='right', width="stretch"):
             st.session_state['login_type']='teacher'
             st.rerun()
 
     with col3:
         st.header("I'm Principal")
-        st.image("assets/principal.png", width=130)
+        st.image("assets/principal.png", width=140)
         if st.button('Principal Portal', type='primary', icon=':material/arrow_outward:', icon_position='right', width="stretch"):
             st.session_state['login_type']='admin'
             st.rerun()
